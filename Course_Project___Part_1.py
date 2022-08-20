@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 
 print("Payroll Processing\n")
 
@@ -6,6 +6,12 @@ print("Payroll Processing\n")
 def insert_employee_name():
     employee_name = input("Enter employee name: ")
     return employee_name
+
+def get_from_to_date():
+    from_date = input("Enter from date in %m/%d/%Y format: ")
+    to_date = input("Enter to date in %m/%d/%Y format: ")
+    
+    return from_date, to_date
 
 def insert_hours():
     hours = float(input('Enter hours worked per pay period: '))
@@ -28,20 +34,61 @@ def calc_tax_netpay(total_hours, hourly_rate, tax_rate):
     netpay = float(total_hours) * float(hourly_rate) - income_tax
     return income_tax, netpay
 
-def employee_info(from_date, to_date, employee_name, hours, hourly_rate, tax_rate, income_tax, gross_pay, netpay):
-    print()
-    print("From date:", from_date.strftime('%m/%d/%y'))
-    print("To date:", to_date.strftime('%m/%d/%y'))
-    print("Employee name: ", employee_name)
-    print("Hours worked per pay period: ", hours)
-    print("Hourly rate: $", hourly_rate)
-    print("Gross pay: $", gross_pay)
-    print("Effective tax rate: ", tax_rate)
-    print("Income tax deducted: $", income_tax)
-    print("Net pay for ", employee_name, "is: $", netpay)
-    print("*******************************************************\n")
+def print_info():
+    total_employees = 0
+    total_hours= 0.00
+    total_gross_pay = 0.00
+    total_tax = 0.00
+    total_netpay = 0.00
+    #################################################################
+    Empfile = open("Employees.txt", "r")
+    while True:
+        rundate = input("Enter start date for report (mm/dd/yyy) or All for all data in file: ")
+        if(rundate.upper()=="ALL"):
+            break
+        try:
+            rundate = datetime.strptime(rundate, "%m,%d,%y")
+            break
+        except ValueError:
+            print("Invalid date format. Please try again.")
+            print()
+            continue
+    while True:
+        EmpDetail = Empfile.readline()
+        if not EmpDetail:
+            break
+        EmpDetail = EmpDetail.replace("\n", "")
+        EmpList = EmpDetail.split("|")
+        from_date = EmpList[0]
+        if (str(rundate).upper() != "ALL"):
+            checkdate = datetime.strptime(from_date, "%m/%d/%y")
+            if(checkdate < rundate):
+                continue
+#########################################################
 
-def cumulative_totals(total_dict):
+        to_date = EmpList[1]
+        employee_name = EmpList[2]
+        hours = float(EmpList[3])
+        hourly_rate = float(EmpList[4])
+        tax_rate = float(EmpList[5])
+        gross_pay, income_tax, netpay = calc_tax_netpay(total_hours, hourly_rate, tax_rate)
+        print(from_date, to_date, employee_name, f"{hours:,.2f}", f"{hourly_rate:,.2f}", f"{gross_pay:,.2f}", f"{tax_rate:,.1%}", f"{income_tax:,.2f}", f"{netpay:,.2f}")
+        total_employees + 1
+        total_hours += hours
+        total_gross_pay += gross_pay
+        total_tax = income_tax
+        total_netpay += netpay
+        EmpTotals["TotEmp"] = TotEmployees
+        EmpTotals["TotHrs"] = TotHours
+        EmpTotals["TotGrossPay"] = TotGrossPay
+        EmpTotals["TotTax"] = TotTax
+        EmpTotals["TotNetPay"] = TotNetPay
+        DetailsPrinted = True
+
+
+
+
+def PrintTotals(EmpTotals):
     print("Total employees: ", total_dict['total_employees'])
     print("Cumulative hours all employees: ", total_dict['total_hours'])
     print("Total tax amount: $", total_dict['total_tax'])
@@ -50,47 +97,32 @@ def cumulative_totals(total_dict):
     print()
     print('*********************************************************\n')
 
-def get_from_to_date():
-    from_date = input("Enter from date in mm/dd/yyyy format: ")
-    from_date = datetime.datetime.strptime(from_date, "%m/%d/%Y").date()
-    to_date = input("Enter to date in mm/dd/yyyy format: ")
-    to_date = datetime.datetime.strptime(to_date, "%m/%d/%Y").date()
-
-    return from_date, to_date
-
-def calc_employee_taxes(employee_list, total_dict):
-    for employee in employee_listt:
-        from_date, to_date, employee_name, hours, hourly_rate, tax_rate = employee
-        gross_pay = calc_gross_pay(hours, hourly_rate)
-        income_tax, netpay = calc_tax_netpay(total_hours, hourly_rate, tax_rate)
 
 
-def main():
-    employee_list = [ ]
-    total_dict={"total_employees": 0,
-    "total_hours":0,
-    "total_gross_pay":0,
-    "total_tax": 0,
-    "total_netpay":0}
 
+
+if __name__=="__main__":
+    Empfile = open("Employees.txt", "a+")
+    EmpTotals = {}
     while True:
         employee_name = insert_employee_name()
-        if employee_name =="end":
+        if employee_name.upper() =="END":
             break
         from_date, to_date = get_from_to_date()
         hours_worked = insert_hours()
         hourly_rate = insert_hourly_rate()
         tax_rate = insert_tax_rate()
-        gross_pay = calc_gross_pay(hours_worked, hourly_rate)
-        income_tax, netpay= calc_tax_netpay(hours_worked, hourly_rate, tax_rate)
-        employee_info(from_date, to_date, employee_name, hours_worked, hourly_rate, tax_rate, income_tax, gross_pay, netpay)
+        ##############################################
+        EmpDetail = from_date + "|" + to_date + "|" + employee_name + "|" + str(hours_worked) + "|" + "|" + str(hourly_rate) + "|" + str(tax_rate) + "\n"
+        Empfile.write(EmpDetail)
 
-        total_dict['total_employees'] += 1
-        total_dict['total_hours'] += hours_worked
-        total_dict['total_tax'] += income_tax
-        total_dict['total_gross_pay'] += gross_pay
-        total_dict['total_netpay'] += netpay
-    cumulative_totals(total_dict)
+        Empfile.close()
+        DetailsPrinted = False
+        print_info()
 
-if __name__=="__main__":
-    main()
+        if (DetailsPrinted):
+            PrintTotals(EmpTotals)
+        else:
+            print ("No detail information to print")
+        
+
